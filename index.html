@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mentoria: O Ecossistema de Dados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Slate Gray, Soft Teal, Navy Blue (Tech Professional) -->
+    <!-- Application Structure Plan: The SPA uses a tabbed navigation system to divide the mentoring session into three logical chapters: 1. Definition, 2. Tasks, and 3. Role Comparison. This task-oriented view prevents information overload. Visualizations (Doughnut and Radar charts) are used to quantify abstract concepts like daily time allocation and skill distribution among roles. -->
+    <!-- Visualization & Content Choices: 
+         1. Definition: CSS-based pipeline diagram -> Shows data flow simply without SVG.
+         2. Tasks: Interactive cards + Doughnut Chart (Chart.js) -> Shows distribution of effort across different DE problems.
+         3. Roles: Radar Chart (Chart.js) -> Best way to compare overlapping skill profiles (Engineer vs Scientist vs Analyst) across multiple dimensions (Coding, Math, Business). 
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        height: 350px;
+        max-height: 400px;
+      }
+      @media (min-width: 768px) {
+        .chart-container {
+          height: 400px;
+        }
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+        animation: fadeIn 0.5s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .pipeline-box {
+        transition: all 0.3s ease;
+      }
+      .pipeline-box:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+    <header class="bg-slate-900 text-white shadow-md">
+      <div class="max-w-6xl mx-auto px-4 py-6">
+        <h1 class="text-3xl font-bold tracking-tight">Mentoria em Data Engineering</h1>
+        <p class="text-slate-300 mt-2 text-lg">O teu guia interativo para compreender o mundo dos dados.</p>
+      </div>
+    </header>
+
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+      <div class="max-w-6xl mx-auto px-4 flex flex-wrap gap-2 py-3">
+        <button
+          onclick="switchTab('tab-intro')"
+          id="btn-tab-intro"
+          class="px-5 py-2 rounded-md font-medium text-sm transition-colors bg-teal-600 text-white hover:bg-teal-700"
+        >
+          1. O que é?
+        </button>
+        <button
+          onclick="switchTab('tab-tasks')"
+          id="btn-tab-tasks"
+          class="px-5 py-2 rounded-md font-medium text-sm transition-colors bg-slate-100 text-slate-600 hover:bg-slate-200"
+        >
+          2. Tarefas e Desafios
+        </button>
+        <button
+          onclick="switchTab('tab-roles')"
+          id="btn-tab-roles"
+          class="px-5 py-2 rounded-md font-medium text-sm transition-colors bg-slate-100 text-slate-600 hover:bg-slate-200"
+        >
+          3. Diferença entre Perfis
+        </button>
+      </div>
+    </nav>
+
+    <main class="flex-grow max-w-6xl mx-auto px-4 py-8 w-full">
+      <section id="tab-intro" class="tab-content active">
+        <div class="mb-8">
+          <h2 class="text-2xl font-bold text-slate-800 mb-4 border-b-2 border-teal-500 pb-2 inline-block">
+            O que é a Engenharia de Dados?
+          </h2>
+          <p class="text-lg leading-relaxed text-slate-700 mb-6">
+            A Engenharia de Dados é a prática de desenhar, construir e manter os sistemas e a arquitetura que permitem a
+            recolha, armazenamento e processamento de dados em grande escala. Se a Ciência de Dados fosse um carro de
+            alta velocidade, a Engenharia de Dados seria a construção das estradas seguras, do motor robusto e do
+            sistema de combustível que permite a esse carro andar.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+          <h3 class="text-xl font-semibold mb-6 text-center">O Pipeline Básico de Dados (Interativo)</h3>
+          <p class="text-sm text-center text-slate-500 mb-8">
+            Passa o rato sobre cada fase para compreenderes o fluxo da informação.
+          </p>
+
+          <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div
+              class="pipeline-box bg-slate-100 p-6 rounded-lg border-2 border-slate-300 w-full md:w-1/4 text-center cursor-help"
+              onmouseover="updateInfo('origens')"
+              onmouseout="clearInfo()"
+            >
+              <div class="text-3xl mb-2">📱</div>
+              <h4 class="font-bold">1. Origens</h4>
+              <p class="text-xs text-slate-500 mt-2">APIs, Bases de dados, Sensores</p>
+            </div>
+
+            <div class="text-teal-600 text-2xl font-bold rotate-90 md:rotate-0">➔</div>
+
+            <div
+              class="pipeline-box bg-teal-50 p-6 rounded-lg border-2 border-teal-300 w-full md:w-1/4 text-center cursor-help"
+              onmouseover="updateInfo('processamento')"
+              onmouseout="clearInfo()"
+            >
+              <div class="text-3xl mb-2">⚙️</div>
+              <h4 class="font-bold text-teal-800">2. Processamento (ETL)</h4>
+              <p class="text-xs text-teal-600 mt-2">Extrair, Transformar, Carregar</p>
+            </div>
+
+            <div class="text-teal-600 text-2xl font-bold rotate-90 md:rotate-0">➔</div>
+
+            <div
+              class="pipeline-box bg-blue-50 p-6 rounded-lg border-2 border-blue-300 w-full md:w-1/4 text-center cursor-help"
+              onmouseover="updateInfo('armazenamento')"
+              onmouseout="clearInfo()"
+            >
+              <div class="text-3xl mb-2">🗄️</div>
+              <h4 class="font-bold text-blue-800">3. Armazenamento</h4>
+              <p class="text-xs text-blue-600 mt-2">Data Warehouse, Data Lake</p>
+            </div>
+          </div>
+
+          <div
+            id="pipeline-info"
+            class="mt-8 p-4 bg-slate-50 border border-slate-200 rounded-md min-h-[100px] flex items-center justify-center text-slate-600 italic text-center"
+          >
+            Passa o cursor pelas caixas acima para veres o detalhe de cada etapa que um Data Engineer constrói.
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-tasks" class="tab-content">
+        <div class="mb-8">
+          <h2 class="text-2xl font-bold text-slate-800 mb-4 border-b-2 border-teal-500 pb-2 inline-block">
+            Que problemas resolve um Data Engineer?
+          </h2>
+          <p class="text-lg leading-relaxed text-slate-700">
+            O dia-a-dia de um Engenheiro de Dados não é apenas escrever código; é garantir que a infraestrutura de dados
+            da empresa é escalável, fiável e segura. Explora as categorias abaixo.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="flex flex-col gap-4">
+            <button
+              class="text-left bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:border-teal-500 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+              onclick="highlightChart('TarefasChart', 0)"
+            >
+              <h4 class="font-bold text-lg">1. Construção de Pipelines (ETL/ELT)</h4>
+              <p class="text-sm text-slate-600 mt-1">
+                Como movemos milhões de registos do ponto A para o ponto B sem perder informação e em tempo útil?
+              </p>
+            </button>
+            <button
+              class="text-left bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:border-teal-500 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+              onclick="highlightChart('TarefasChart', 1)"
+            >
+              <h4 class="font-bold text-lg">2. Gestão de Infraestrutura & Cloud</h4>
+              <p class="text-sm text-slate-600 mt-1">
+                Provisionamento e otimização de serviços (AWS, GCP, Azure), garantindo que os servidores aguentam o
+                volume de dados.
+              </p>
+            </button>
+            <button
+              class="text-left bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:border-teal-500 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+              onclick="highlightChart('TarefasChart', 2)"
+            >
+              <h4 class="font-bold text-lg">3. Qualidade e Governança</h4>
+              <p class="text-sm text-slate-600 mt-1">
+                Lidar com dados sujos. Implementar testes automáticos para garantir que analistas não reportam valores
+                errados.
+              </p>
+            </button>
+            <button
+              class="text-left bg-white p-4 rounded-lg shadow-sm border border-slate-200 hover:border-teal-500 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500"
+              onclick="highlightChart('TarefasChart', 3)"
+            >
+              <h4 class="font-bold text-lg">4. Otimização de Performance</h4>
+              <p class="text-sm text-slate-600 mt-1">
+                Otimizar queries que demoram horas para demorarem segundos. Modelagem de bases de dados analíticas.
+              </p>
+            </button>
+          </div>
+
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-center">
+            <h3 class="text-center font-semibold mb-4 text-slate-700">Distribuição Típica de Esforço</h3>
+            <div class="chart-container">
+              <canvas id="TarefasChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-roles" class="tab-content">
+        <div class="mb-8">
+          <h2 class="text-2xl font-bold text-slate-800 mb-4 border-b-2 border-teal-500 pb-2 inline-block">
+            Data Engineer vs. Scientist vs. Analyst
+          </h2>
+          <p class="text-lg leading-relaxed text-slate-700 mb-6">
+            A confusão entre estes três papéis é comum. Para simplificar: o <strong>Engenheiro</strong> constrói o
+            sistema, o <strong>Analista</strong> explica o passado/presente, e o <strong>Cientista</strong> prevê o
+            futuro. Usa o gráfico para comparar as competências técnicas.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <div class="chart-container">
+              <canvas id="RolesRadarChart"></canvas>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-6">
+            <div class="p-5 border-l-4 border-teal-600 bg-teal-50 rounded-r-lg">
+              <h3 class="font-bold text-xl text-teal-900 mb-2">🛠️ Data Engineer (O Construtor)</h3>
+              <p class="text-sm text-slate-700">
+                Foca-se na arquitetura, programação avançada (Python, Scala, Java), sistemas distribuídos (Spark, Kafka)
+                e bases de dados (SQL/NoSQL). O seu cliente final são os outros profissionais de dados. A sua métrica de
+                sucesso é a estabilidade, velocidade e disponibilidade dos dados.
+              </p>
+            </div>
+
+            <div class="p-5 border-l-4 border-orange-500 bg-orange-50 rounded-r-lg">
+              <h3 class="font-bold text-xl text-orange-900 mb-2">📊 Data Analyst (O Intérprete)</h3>
+              <p class="text-sm text-slate-700">
+                Foca-se na resposta a perguntas de negócio. Usa SQL forte, ferramentas de visualização (PowerBI,
+                Tableau) e excel avançado. Pega nos dados preparados pelo Engenheiro para criar relatórios. O seu
+                cliente é a equipa de gestão. A sua métrica é clareza e insights acionáveis.
+              </p>
+            </div>
+
+            <div class="p-5 border-l-4 border-indigo-600 bg-indigo-50 rounded-r-lg">
+              <h3 class="font-bold text-xl text-indigo-900 mb-2">🧠 Data Scientist (O Previsor)</h3>
+              <p class="text-sm text-slate-700">
+                Foca-se em matemática, estatística rigorosa e algoritmos de Machine Learning. Usa os dados limpos pelo
+                Engenheiro para treinar modelos que prevêem churn, recomendam produtos ou categorizam texto. O seu
+                cliente pode ser o produto em si ou a estratégia da empresa.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-6 text-center text-sm mt-auto">
+      <p>Desenvolvido para propósitos de Mentoria. Focado na clareza e exploração interativa.</p>
+    </footer>
+
+    <script>
+      const btnClassesActive =
+        "px-5 py-2 rounded-md font-medium text-sm transition-colors bg-teal-600 text-white shadow-md";
+      const btnClassesInactive =
+        "px-5 py-2 rounded-md font-medium text-sm transition-colors bg-slate-100 text-slate-600 hover:bg-slate-200";
+
+      function switchTab(tabId) {
+        document.querySelectorAll(".tab-content").forEach((el) => el.classList.remove("active"));
+        document.querySelectorAll("nav button").forEach((btn) => {
+          btn.className = btnClassesInactive;
+        });
+
+        document.getElementById(tabId).classList.add("active");
+
+        let btnId = "btn-" + tabId;
+        document.getElementById(btnId).className = btnClassesActive;
+      }
+
+      const infoData = {
+        origens:
+          "<strong>Fase de Origem:</strong> Os dados nascem de transações em lojas físicas, cliques num site, sensores IoT ou APIs externas. O formato é caótico: JSON, CSVs, ficheiros de texto ou tabelas de aplicações.",
+        processamento:
+          '<strong>Fase de Processamento:</strong> Onde a "magia" da engenharia acontece. O código (geralmente Python, SQL ou Scala) recolhe os dados brutos, limpa duplicados, formata datas, une tabelas e prepara tudo para consumo.',
+        armazenamento:
+          "<strong>Fase de Armazenamento:</strong> Os dados limpos são guardados em estruturas otimizadas para leitura rápida (como o Snowflake, BigQuery ou Redshift). A partir daqui, estão prontos para os Analistas e Cientistas.",
+      };
+
+      function updateInfo(step) {
+        const infoBox = document.getElementById("pipeline-info");
+        infoBox.innerHTML = infoData[step];
+        infoBox.classList.remove("text-slate-600", "italic");
+        infoBox.classList.add("text-slate-800");
+      }
+
+      function clearInfo() {
+        const infoBox = document.getElementById("pipeline-info");
+        infoBox.innerHTML =
+          "Passa o cursor pelas caixas acima para veres o detalhe de cada etapa que um Data Engineer constrói.";
+        infoBox.classList.add("text-slate-600", "italic");
+        infoBox.classList.remove("text-slate-800");
+      }
+
+      let chartTarefas;
+
+      function initCharts() {
+        const ctxTarefas = document.getElementById("TarefasChart").getContext("2d");
+        chartTarefas = new Chart(ctxTarefas, {
+          type: "doughnut",
+          data: {
+            labels: ["Pipelines (ETL/ELT)", "Infraestrutura Cloud", "Qualidade de Dados", "Otimização/Modelagem"],
+            datasets: [
+              {
+                data: [45, 25, 15, 15],
+                backgroundColor: ["#0d9488", "#334155", "#eab308", "#0284c7"],
+                borderWidth: 2,
+                borderColor: "#ffffff",
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom", labels: { font: { family: "sans-serif" } } },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return " " + context.label + ": " + context.parsed + "% do tempo";
+                  },
+                },
+              },
+            },
+            cutout: "65%",
+          },
+        });
+
+        const ctxRadar = document.getElementById("RolesRadarChart").getContext("2d");
+        new Chart(ctxRadar, {
+          type: "radar",
+          data: {
+            labels: [
+              "Engenharia de Software",
+              "Infra. Cloud & Big Data",
+              "Matemática/Estatística",
+              "Machine Learning",
+              "Conhecimento de Negócio",
+              "Visualização de Dados",
+            ],
+            datasets: [
+              {
+                label: "Data Engineer",
+                data: [90, 95, 30, 20, 50, 30],
+                borderColor: "#0d9488",
+                backgroundColor: "rgba(13, 148, 136, 0.2)",
+                pointBackgroundColor: "#0d9488",
+                borderWidth: 2,
+              },
+              {
+                label: "Data Scientist",
+                data: [70, 40, 95, 95, 60, 50],
+                borderColor: "#4f46e5",
+                backgroundColor: "rgba(79, 70, 229, 0.2)",
+                pointBackgroundColor: "#4f46e5",
+                borderWidth: 2,
+                hidden: false,
+              },
+              {
+                label: "Data Analyst",
+                data: [30, 10, 60, 10, 95, 95],
+                borderColor: "#f97316",
+                backgroundColor: "rgba(249, 115, 22, 0.2)",
+                pointBackgroundColor: "#f97316",
+                borderWidth: 2,
+                hidden: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              r: {
+                angleLines: { color: "rgba(0,0,0,0.1)" },
+                grid: { color: "rgba(0,0,0,0.1)" },
+                pointLabels: { font: { size: 11, family: "sans-serif" }, color: "#475569" },
+                ticks: { display: false, min: 0, max: 100 },
+              },
+            },
+            plugins: {
+              legend: { position: "top" },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    return " " + context.dataset.label + ": Nível " + context.raw;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function highlightChart(chartId, index) {
+        if (chartId === "TarefasChart" && chartTarefas) {
+          const activeElements = [{ datasetIndex: 0, index: index }];
+          chartTarefas.setActiveElements(activeElements);
+          chartTarefas.tooltip.setActiveElements(activeElements);
+          chartTarefas.update();
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        initCharts();
+      });
+    </script>
+  </body>
+</html>
